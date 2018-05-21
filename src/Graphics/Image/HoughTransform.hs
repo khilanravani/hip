@@ -58,21 +58,21 @@ fromIntegralP = fmap fromIntegral
 
 -- ######## Hough-T function begins
 
-hough :: Image arr RGBA a -> Int -> Int -> Image arr RGBA a
+hough :: MImage a arr RGBA a -> Int -> Int -> Image arr RGBA a
 hough image thetaSize distSize = hImage
  where
   widthMax = (GI.rows image) - 1
   heightMax = (GI.cols image) - 1
   xCtr = widthMax / 2
   yCtr = heightMax / 2
-  map = IP.toImageY image
+  luma = IP.toImageY image
 {- or let arr = arrLightIx2 Par (600 :. 800) {Generated image} // image
       lumaImg = computeAs S $ fmap PixelY arr
 -}
   slope x y =
-     let orig = I.read map x y
-         x_ = I.read map (min (x + 1) widthMax) y
-         y_ = I.read map x (min (y + 1) heightMax)
+     let orig = I.read luma x y
+         x_ = I.read luma (min (x + 1) widthMax) y
+         y_ = I.read luma x (min (y + 1) heightMax)
      in fromIntegralP (orig - x_, orig - y_)
   -- List
   slopeMap = [ ((x, y), slope (x, y)) | x <- [0 .. widthMax], y <- [0 .. heightMax] ]
@@ -92,7 +92,7 @@ hough image thetaSize distSize = hImage
      do arr <- newArray ((0, 0), (thetaSize, distSize)) 0
         forM_ slopeMap $ \((x, y), gradient) -> do
             let (x_, y_) = fromIntegralP ((xCtr, yCtr) `subtract` (x, y))
-            when (mag gradient > 127) $
+            when ((mag gradient) > 127) $
               forM_ [0 .. thetaSize] $ \theta -> do
                 let theta_ =
                       fromIntegral theta * 360 / fromIntegral thetaSize / 180 *
