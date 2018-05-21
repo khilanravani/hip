@@ -58,7 +58,7 @@ fromIntegralP = fmap fromIntegral
 
 -- ######## Hough-T function begins
 
-hough :: MImage a arr RGBA a -> Int -> Int -> Image arr RGBA a
+hough :: Image arr RGBA a -> Int -> Int -> Image arr RGBA a
 hough image thetaSize distSize = hImage
  where
   widthMax = (GI.rows image) - 1
