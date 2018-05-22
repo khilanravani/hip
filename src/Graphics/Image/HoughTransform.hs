@@ -65,17 +65,18 @@ hough image thetaSize distSize = hImage
   heightMax = (GI.cols image) - 1
   xCtr = widthMax / 2
   yCtr = heightMax / 2
-  luma = IP.toImageY image
-{- or let arr = arrLightIx2 Par (600 :. 800) {Generated image} // image
-      lumaImg = computeAs S $ fmap PixelY arr
--}
+  --luma = IP.toImageY image
+
+  arr = makeImage (200, 200) (\(i, j) -> PixelY $ fromIntegral (i*j)) / (200*200) 
+  luma = fmap PixelY arr
+
   slope x y =
-     let orig = I.read luma x y
-         x_ = I.read luma (min (x + 1) widthMax) y
-         y_ = I.read luma x (min (y + 1) heightMax)
+     let orig = I.index luma (xCtr, yCtr) 
+         x_ = I.index luma (widthMax,y)		 
+         y_ = I.index luma (x,heightMax)
      in fromIntegralP (orig - x_, orig - y_)
   -- List
-  slopeMap = [ ((x, y), slope (x, y)) | x <- [0 .. widthMax], y <- [0 .. heightMax] ]
+  slopeMap = [ ((x, y), slope x y) | x <- [0 .. widthMax], y <- [0 .. heightMax] ]
   
   -- Type declaration
   distMax :: Double
@@ -97,12 +98,12 @@ hough image thetaSize distSize = hImage
                 let theta_ =
                       fromIntegral theta * 360 / fromIntegral thetaSize / 180 *
                       pi :: Double
-                    distance = cos theta_ * x_ + sin theta_ * y_
-                    fromIntegral distance_ = round  (distance * fromIntegral distSize )/ distMax
-                    idx = (theta, distance_)
+                    distance = round (cos theta_ * x_ + sin theta_ * y_) * ( distSize / fromIntegral distMax)
+                    --fromIntegral distance_ = round  (distance * fromIntegral distSize )/ distMax
+                    idx = (theta, distance)
 				-- optimization possible 
 				-- minLineLength = 100 (pixels) and maxLineGap = 10 (pixels)
-                when (distance_ >= 0 && distance_ < distSize) $
+                when (distance>= 0 && distance < distSize) $
                   do old <- readArray arr idx
                      writeArray arr idx (old + 1)
         return arr
@@ -110,10 +111,9 @@ hough image thetaSize distSize = hImage
   maxAcc = F.maximum accBin 
   -- Generating function
   hTransform x y =
-       let l = 255 - round  ((accBin ! (x, y)) / maxAcc * 255)
-       in image l l l
+       let l = 255 - round ((I.index accBin (x, y)) /255 ) * maxAcc
+       in PixelRGBA l l l l
   hImage = makeImage thetaSize distSize hTransform
-
 
 houghIO :: FilePath -> FilePath -> Int -> Int -> IO ()
 houghIO path outpath thetaSize distSize = do
@@ -164,3 +164,4 @@ main = do
      putStrLn $
      "Usage: " ++ prog ++ " <image-file> <out-file.png> <width> <height>"
 -}
+
