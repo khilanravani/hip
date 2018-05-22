@@ -113,7 +113,7 @@ hough image thetaSize distSize = hImage
   hTransform x y =
        let l = 255 - round ((I.index accBin (x, y)) /255 ) * maxAcc
        in PixelRGBA l l l l
-  hImage = makeImage thetaSize distSize hTransform
+  hImage = makeImage (thetaSize, distSize) hTransform
 
 houghIO :: FilePath -> FilePath -> Int -> Int -> IO ()
 houghIO path outpath thetaSize distSize = do
