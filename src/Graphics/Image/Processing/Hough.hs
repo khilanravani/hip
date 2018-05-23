@@ -35,17 +35,39 @@ mag x = sqrt (dotProduct x x)
 fromIntegralP :: (Integral x, Num y) => (x, x) -> (y, y)
 fromIntegralP (x1, y1) = (fromIntegral x1, fromIntegral y1)
 
+hough :: Image arr RGB a -> Image arr RGB a
+hough image = hImage
+ where
+   widthMax = ((rows image) - 1) 
+   xCtr = (widthMax / 2)
+   heightMax = ((cols image) - 1)
+   yCtr = (heightMax / 2)
+   luma = IP.toImageY image  
+   
+   slope x y =
+     let orig = I.index luma (xCtr, yCtr) 
+         x_ = I.index luma (widthMax,y)		 
+         y_ = I.index luma (x,heightMax)
+     in fromIntegralP (orig - x_, orig - y_)
+  
+   gradMap =
+     [ ((x, y), slope x y)
+     | x <- [0 .. widthMax]
+     , y <- [0 .. heightMax] ]
+   
 
 
-
-
+   hImage :: Image arr RGB a
+   hImage = makeImageR a (200, 200) (\(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) / 400)
 
 main :: IO()
 main = do
   ans <- getArgs
   putStrLn "ans"
-  let frog = makeImageR VU (200, 200) (\(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) / 400) 
+  let frog :: Image VU RGB Double
+      frog = makeImageR VU (200, 200) (\(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) / 400) 
   writeImage "test.png" frog 
+  --hough frog
 
 
 
