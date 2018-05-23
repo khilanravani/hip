@@ -42,12 +42,10 @@ fromIntegralP (x1, y1) = (fromIntegral x1, fromIntegral y1)
 
 main :: IO()
 main = do
-         ans <- getArgs
-         putStrLn "ans"
-
-frog = makeImageR VU (200, 200) ( \(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) ) / 400
-  writeImage "test.png" frog
-
+  ans <- getArgs
+  putStrLn "ans"
+  let frog = makeImageR VU (200, 200) (\(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) / 400) 
+  writeImage "test.png" frog 
 
 
 
