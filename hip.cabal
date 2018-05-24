@@ -67,6 +67,7 @@ Library
                  , Graphics.Image.Processing.Binary
                  , Graphics.Image.Processing.Complex
                  , Graphics.Image.Processing.Filter
+                 , Graphics.Image.Processing.Hough
                  , Graphics.Image.Types
   Other-Modules:   Graphics.Image.ColorSpace.Binary
                  , Graphics.Image.ColorSpace.CMYK
