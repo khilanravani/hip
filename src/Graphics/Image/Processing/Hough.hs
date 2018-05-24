@@ -1,4 +1,6 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Graphics.Image.Processing.Hough where
 
 import Control.Applicative
@@ -35,7 +37,11 @@ mag x = sqrt (dotProduct x x)
 fromIntegralP :: (Integral x, Num y) => (x, x) -> (y, y)
 fromIntegralP (x1, y1) = (fromIntegral x1, fromIntegral y1)
 
-hough :: Image arr RGB a -> Image arr RGB a
+hough
+  :: forall arr a.
+     (Array arr RGB a, Elevator a, Fractional a)
+  => Image arr RGB a
+  -> Image arr RGB a
 hough image = hImage
  where
    widthMax = ((rows image) - 1) 
@@ -46,9 +52,9 @@ hough image = hImage
    
    slope x y =
      let orig = I.index luma (xCtr, yCtr) 
-         x_ = I.index luma (widthMax,y)		 
-         y_ = I.index luma (x,heightMax)
-     in fromIntegralP (orig - x_, orig - y_)
+         x_ = I.index luma (widthMax, y)		 
+         y_ = I.index luma (x, heightMax)
+     in (orig - x_, orig - y_)
   
    gradMap =
      [ ((x, y), slope x y)
@@ -58,7 +64,7 @@ hough image = hImage
 
 
    hImage :: Image arr RGB a
-   hImage = makeImageR a (200, 200) (\(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) / 400)
+   hImage = makeImage (200, 200) (\(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) / 400)
 
 main :: IO()
 main = do
@@ -68,9 +74,3 @@ main = do
       frog = makeImageR VU (200, 200) (\(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) / 400) 
   writeImage "test.png" frog 
   --hough frog
-
-
-
-
-
-
