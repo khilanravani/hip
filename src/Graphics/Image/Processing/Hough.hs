@@ -81,7 +81,7 @@ hough image = hImage
         return arr
 
    maxAcc = F.maximum accBin 
-   hTransform x y =
+   hTransform (x, y) =
        let l = 255 - round ((I.index accBin (x, y)) /255 ) * maxAcc
        in PixelRGB l l l
    hImage :: Image arr RGB Integer
