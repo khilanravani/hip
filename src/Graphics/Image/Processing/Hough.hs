@@ -46,9 +46,9 @@ hough
   :: forall arr a b.
      ( Array arr RGB a, Array arr RGB b
      , Array arr Y Int, MArray arr Y Int
-     , Array arr Y Double, MArray arr Y Double) => Image arr RGB a -> Image arr RGB b
+     , Array arr Y Double, MArray arr Y Double) => Image arr RGB a -> Int -> Int -> Image arr RGB b
 
-hough image = hImage
+hough image thetaSz distSz = hImage
  where
    widthMax, xCtr, heightMax, yCtr :: Int
    widthMax = ((rows image) - 1)
@@ -65,6 +65,7 @@ hough image = hImage
          PixelY x' = I.index luma (min (x+1) widthMax, y)
          PixelY y' = I.index luma (x, min (y+1) heightMax)
      in (orig - x', orig - y')
+
    slopeMap :: [ ((Int, Int), (Double, Double)) ]
    slopeMap = [ ((x, y), slope x y) | x <- [0 .. widthMax], y <- [0 .. heightMax] ]
 
@@ -73,17 +74,18 @@ hough image = hImage
 
    accBin :: Image arr Y Int
    accBin = runST $
-     do arr <- new (widthMax, heightMax)
+     do arr <- new (thetaSz, distSz)
         forM_ slopeMap $ \((x, y), gradient) -> do
             let (x', y') = fromIntegralP ((xCtr, yCtr) `sub` (x, y))
             when ((mag gradient) > 127) $
-              forM_ [0 .. widthMax] $ \theta -> do
+              forM_ [0 .. thetaSz] $ \theta -> do
                 let theta_ =
-                      fromIntegral theta * 360 / fromIntegral heightMax / 180 *
+                      fromIntegral theta * 360 / fromIntegral thetaSz / 180 *
                       pi :: Double
-                    distance = cos theta_ * x' + sin theta_ * y' * ( fromIntegral widthMax / distMax)
-                    idx = (theta, round distance)
-                when (distance>= 0 && distance < fromIntegral heightMax) $
+                    distance = cos theta_ * x' + sin theta_ * y'
+                    distance_ = truncate $ distance * fromIntegral distSz / distMax  
+                    idx = (theta, distance_)
+                when (distance_ >= 0 && distance_ < distSz) $
                   do old <- I.read arr idx
                      write arr idx (old + 1)
         freeze arr
@@ -97,12 +99,16 @@ hough image = hImage
            l = fromIntegral $ 255 - (acc_xy `div` 255) * maxAcc
        in PixelRGB l l l
 
-   hImage = makeImage (widthMax, heightMax) hTransform
+   hImage = makeImage (thetaSz, distSz) hTransform
    
 test :: IO ()
 test = do
-  let frog :: Image VU RGB Double
-      frog = makeImageR VU (200, 200) (\(i, j) -> PixelRGB (fromIntegral i) (fromIntegral j) (fromIntegral (i + j)) / 400) 
-  let houghImage :: Image VU RGB Double
-      houghImage = hough frog
-  writeImage "test.png" houghImage
+      frog <- readImageRGB VU "frog_upsampled.jpg"
+      input1 <- getLine
+      input2 <- getLine
+      let thetaSz = (P.read input1 :: Int)
+      let distSz = (P.read input2 :: Int)  
+      writeImage "input.png" frog
+      let houghImage :: Image VU RGB Double
+          houghImage = hough frog thetaSz distSz
+      writeImage "test.png" houghImage
