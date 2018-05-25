@@ -8,6 +8,8 @@ import System.Environment (getArgs, getProgName)
 import Control.Monad (forM_, when)
 import Control.Monad.ST
 import qualified Data.Foldable as F (maximum)
+import Data.Array
+import Data.Array.ST (newArray, writeArray, readArray, runSTArray)
 import Data.List
 
 import Prelude as P hiding (subtract)
@@ -19,7 +21,7 @@ import Graphics.Image.Interface as I
 import Graphics.Image.Types as IP
 
 -- ####### Some trivial functions ########
-toImageY :: (ToY cs e, Array arr cs e, Array arr Y Double) =>
+toImageY :: (ToY cs e, IP.Array arr cs e, IP.Array arr Y Double) =>
             Image arr cs e
          -> Image arr Y Double
 toImageY = I.map toPixelY
@@ -44,9 +46,9 @@ maxLineGap = 10
 
 hough
   :: forall arr a b.
-     ( Array arr RGB a, Array arr RGB b
-     , Array arr Y Int, MArray arr Y Int
-     , Array arr Y Double, MArray arr Y Double) => Image arr RGB a -> Int -> Int -> Image arr RGB b
+     ( IP.Array arr RGB a, IP.Array arr RGB b
+     , IP.Array arr Y Int, MArray arr Y Int
+     , IP.Array arr Y Double, MArray arr Y Double) => Image arr RGB a -> Int -> Int -> Image arr RGB b
 
 hough image thetaSz distSz = hImage
  where
@@ -71,34 +73,29 @@ hough image thetaSz distSz = hImage
 
    distMax :: Double
    distMax = (sqrt . fromIntegral $ (heightMax + 1) ^ (2 :: Int) + (widthMax + 1) ^ (2 :: Int)) / 2
-
-   accBin :: Image arr Y Int
-   accBin = runST $
-     do arr <- new (thetaSz, distSz)
+   
+   accBin = runSTArray $
+     do arr <- newArray ((0, 0), (thetaSz, distSz)) 0
         forM_ slopeMap $ \((x, y), gradient) -> do
-            let (x', y') = fromIntegralP ((xCtr, yCtr) `sub` (x, y))
-            when ((mag gradient) > 127) $
+            let (x', y') = fromIntegralP $ (xCtr, yCtr) `sub` (x, y)
+            when (mag gradient > 127) $
               forM_ [0 .. thetaSz] $ \theta -> do
                 let theta_ =
                       fromIntegral theta * 360 / fromIntegral thetaSz / 180 *
                       pi :: Double
                     distance = cos theta_ * x' + sin theta_ * y'
-                    distance_ = truncate $ distance * fromIntegral distSz / distMax  
+                    distance_ = truncate $ distance * fromIntegral distSz / distMax
                     idx = (theta, distance_)
                 when (distance_ >= 0 && distance_ < distSz) $
-                  do old <- I.read arr idx
-                     write arr idx (old + 1)
-        freeze arr
+                  do old <- readArray arr idx
+                     writeArray arr idx (old + 1)
+        return arr
 
-   maxAcc :: Int
-   PixelY maxAcc = I.fold (\p1@(PixelY a) p2@(PixelY b) -> if a < b then p2 else p1) (PixelY 0) accBin
-
-   hTransform :: (Int, Int) -> Pixel RGB b
-   hTransform (x, y) =
-       let PixelY acc_xy = I.index accBin (x, y)
-           l = fromIntegral $ 255 - (acc_xy `div` 255) * maxAcc
-       in PixelRGB l l l
-
+   maxAcc = F.maximum accBin
+   hTransform x y =
+        let l = 255 - truncate ((accBin ! (x, y)) / maxAcc * 255)
+        in PixelRGB l l l
+ 
    hImage = makeImage (thetaSz, distSz) hTransform
    
 test :: IO ()
