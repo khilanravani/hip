@@ -92,7 +92,7 @@ hough image thetaSz distSz = hImage
         return arr
 
    maxAcc = F.maximum accBin
-   hTransform x y =
+   hTransform (x, y) =
         let l = 255 - truncate ((accBin ! (x, y)) / maxAcc * 255)
         in PixelRGB l l l
  
