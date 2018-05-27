@@ -46,7 +46,7 @@ maxLineGap = 10
 
 hough
   :: forall arr a b.
-     ( IP.Array arr RGB a, IP.Array arr RGB b
+     ( Integral b, IP.Array arr RGB a, IP.Array arr RGB b
      , IP.Array arr Y Int, MArray arr Y Int
      , IP.Array arr Y Double, MArray arr Y Double) => Image arr RGB a -> Int -> Int -> Image arr RGB b
 
