@@ -41,9 +41,6 @@ mag x = sqrt (dotProduct x x)
 fromIntegralP :: (Integral x, Num y) => (x, x) -> (y, y)
 fromIntegralP (x1, y1) = (fromIntegral x1, fromIntegral y1)
    
-maxLineGap :: Int
-maxLineGap = 10
-
 hough
   :: forall arr a b.
      ( Integral b, IP.Array arr RGB a, IP.Array arr RGB b
@@ -90,7 +87,7 @@ hough image thetaSz distSz = hImage
                   do old <- readArray arr idx
                      writeArray arr idx (old + 1)
         return arr
-
+	
    maxAcc = F.maximum accBin
    hTransform (x, y) =
         let l = 255 - truncate ((accBin ! (x, y)) / maxAcc * 255)
@@ -100,7 +97,7 @@ hough image thetaSz distSz = hImage
    
 test :: IO ()
 test = do
-      frog <- readImageRGB VU "frog_upsampled.jpg"
+      frog <- readImageRGB VU "frog_rbg.jpg"
       input1 <- getLine
       input2 <- getLine
       let thetaSz = (P.read input1 :: Int)
