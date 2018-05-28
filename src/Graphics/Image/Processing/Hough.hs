@@ -45,17 +45,24 @@ fromIntegralP (x1, y1) = (fromIntegral x1, fromIntegral y1)
 mag :: Floating x => (x, x) -> x
 mag x = sqrt (dotProduct x x)
 
--- | 'hough' computes the Linear Hough Transform and maps each point in the target image, ​ (ρ, θ) ​ , to the average color of the pixels on -- the corresponding line of the source image ​(x,y) ​- space, where the line corresponds to points of the form ​(xcosθ + ysinθ = ρ(rho)).     -- The idea is that where there is a straight line in the original image, it corresponds to a bright (or dark, depending on the color of the -- background field) spot; by applying a suitable filter to the results of the transform, it is possible to extract the locations of the     -- lines in the original image
+-- | 'hough' computes the Linear Hough Transform and maps each point in the target image, ​ (ρ, θ) ​ 
+-- to the average color of the pixels on  the corresponding line of the source image ​(x,y) ​- space,
+-- where the line corresponds to points of the form ​(xcosθ + ysinθ = ρ(rho)). 
+-- The idea is that where there is a straight line in the original image, it corresponds to a 
+-- bright (or dark, depending on the color of the background field) spot; by applying a suitable 
+-- filter to the results of the transform, it is possible to extract the locations of the lines in the original image.
 
--- Usage : 
--- frog <- readImageRGB VU "frog_rbg.jpg"
--- input1 <- getLine
--- input2 <- getLine
--- let thetaSz = (P.read input1 :: Int)
--- let distSz = (P.read input2 :: Int)
--- let houghImage :: Image VU RGB Double
---     houghImage = hough frog thetaSz distSz
--- writeImage "test.png" houghImage
+-- <<images/frog_rbg.jpg>>
+
+-- | Usage : 
+-- >>> frog <- readImageRGB VU "frog_rbg.jpg"
+-- >>> input1 <- getLine
+-- >>> input2 <- getLine
+-- >>> let thetaSz = (P.read input1 :: Int)
+-- >>> let distSz = (P.read input2 :: Int)
+-- >>> let houghImage :: Image VU RGB Double
+-- >>>     houghImage = hough frog thetaSz distSz
+-- >>> writeImage "test.png" houghImage
 
 hough
   :: forall arr a.
@@ -88,29 +95,29 @@ hough image thetaSz distSz = I.map (fmap toDouble) hImage
    slopeMap :: [ ((Int, Int), (Double, Double)) ]
    slopeMap = [ ((x, y), slope x y) | x <- [0 .. widthMax], y <- [0 .. heightMax] ]
 
-   distMax :: Double
-   distMax = (sqrt . fromIntegral $ (heightMax + 1) ^ (2 :: Int) + (widthMax + 1) ^ (2 :: Int)) / 2
+   distMax :: Double -- Compute Maximum distance
+   distMax = (sqrt . fromIntegral $ (heightMax + 1) ^ (2 :: Int) + (widthMax + 1) ^ (2 :: Int)) / 2 
 
-   accBin = runSTArray $
-     do arr <- newArray ((0, 0), (thetaSz, distSz)) (0 :: Double)
+   accBin = runSTArray $   -- Core part of Algo begins here. Working in a safe way with a mutable array.
+     do arr <- newArray ((0, 0), (thetaSz, distSz)) (0 :: Double) -- Build a new array, with every element initialised to the supplied value.
         forM_ slopeMap $ \((x, y), gradient) -> do
             let (x', y') = fromIntegralP $ (xCtr, yCtr) `sub` (x, y)
-            when (mag gradient > 127) $
+            when (mag gradient > 0) $
               forM_ [0 .. thetaSz] $ \theta -> do
                 let theta_ =
                       fromIntegral theta * 360 / fromIntegral thetaSz / 180 *
                       pi :: Double
-                    distance = cos theta_ * x' + sin theta_ * y'
-                    distance_ = truncate $ distance * fromIntegral distSz / distMax
+                    distance = cos theta_ * x' + sin theta_ * y'    -- (ρ(rho) = xcosθ + ysinθ)
+                    distance_ = truncate $ distance * fromIntegral distSz / distMax -- returns the nearest integer
                     idx = (theta, distance_)
                 when (distance_ >= 0 && distance_ < distSz) $
-                  do old <- readArray arr idx
+                  do old <- readArray arr idx      -- read an element at 'idx' from mutable array 'arr'
                      writeArray arr idx (old + 1)
         return arr
 
-   maxAcc = F.maximum accBin
+   maxAcc = F.maximum accBin  
    hTransform (x, y) =
-        let l = 255 - truncate ((accBin ! (x, y)) / maxAcc * 255)
+        let l = 255 - truncate ((accBin ! (x, y)) / maxAcc * 255) -- pixel generating function
         in PixelRGB l l l
 
    hImage :: Image arr RGB Word8
