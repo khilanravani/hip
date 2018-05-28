@@ -56,6 +56,7 @@ mag x = sqrt (dotProduct x x)
 -- <<images/frog_rbg.jpg>>
 --
 -- Usage : 
+--
 -- >>> frog <- readImageRGB VU "frog_rbg.jpg"
 -- >>> input1 <- getLine
 -- >>> input2 <- getLine
