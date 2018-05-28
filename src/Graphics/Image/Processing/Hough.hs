@@ -2,7 +2,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- | Hough Transform is used as a part of feature extraction in images. It is a tool that makes it far easier to identify straight lines in --   the source image, whatever their orientation.
+-- | Hough Transform is used as a part of feature extraction in images. 
+-- It is a tool that makes it far easier to identify straight lines in
+-- the source image, whatever their orientation.
 module Graphics.Image.Processing.Hough where
 
 import Control.Monad (forM_, when)
