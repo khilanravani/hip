@@ -5,20 +5,13 @@
 -- | Hough Transform is used as a part of feature extraction in images. It is a tool that makes it far easier to identify straight lines in --   the source image, whatever their orientation.
 module Graphics.Image.Processing.Hough where
 
-import Control.Applicative
-import System.Environment (getArgs, getProgName)
 import Control.Monad (forM_, when)
-import Control.Monad.ST
 import qualified Data.Foldable as F (maximum)
 import Data.Array
 import Data.Array.ST (newArray, writeArray, readArray, runSTArray)
-import Data.List
 
 import Prelude as P hiding (subtract)
-import Graphics.Image.Processing.Filter
 import Graphics.Image
-import Graphics.Image.ColorSpace
-import Graphics.Image.IO
 import Graphics.Image.Interface as I
 import Graphics.Image.Types as IP
 
@@ -56,7 +49,7 @@ mag x = sqrt (dotProduct x x)
 -- <<images/frog_rbg.jpg>>
 --
 -- Usage : 
---
+--	
 -- >>> frog <- readImageRGB VU "frog_rbg.jpg"
 -- >>> input1 <- getLine
 -- >>> input2 <- getLine
