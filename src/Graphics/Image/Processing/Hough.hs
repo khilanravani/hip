@@ -48,13 +48,14 @@ mag x = sqrt (dotProduct x x)
 -- | 'hough' computes the Linear Hough Transform and maps each point in the target image, ​ (ρ, θ) ​ 
 -- to the average color of the pixels on  the corresponding line of the source image ​(x,y) ​- space,
 -- where the line corresponds to points of the form ​(xcosθ + ysinθ = ρ(rho)). 
+--
 -- The idea is that where there is a straight line in the original image, it corresponds to a 
 -- bright (or dark, depending on the color of the background field) spot; by applying a suitable 
 -- filter to the results of the transform, it is possible to extract the locations of the lines in the original image.
-
+--
 -- <<images/frog_rbg.jpg>>
-
--- | Usage : 
+--
+-- Usage : 
 -- >>> frog <- readImageRGB VU "frog_rbg.jpg"
 -- >>> input1 <- getLine
 -- >>> input2 <- getLine
@@ -63,7 +64,7 @@ mag x = sqrt (dotProduct x x)
 -- >>> let houghImage :: Image VU RGB Double
 -- >>>     houghImage = hough frog thetaSz distSz
 -- >>> writeImage "test.png" houghImage
-
+--
 hough
   :: forall arr a.
      ( IP.Array arr RGB a, IP.Array arr RGB Word8
