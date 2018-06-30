@@ -18,7 +18,8 @@ import Graphics.Image
 import Graphics.Image.Types as IP
 import Graphics.Image.ColorSpace (X)
 
-gaborfn :: 
+gaborfn
+  :: RealFloat p => p -> p -> p -> p -> p -> p -> p -> Complex p
 gaborfn λ θ ψ σ γ x y = exp ( (-0.5) * ((x'^2 + γ^2*y'^2) / (σ^2)) :+ 0) * exp ( 0 :+ (2*pi*(x'/λ+ψ)) )
     where x' =  x * cos θ + y * sin θ
           y' = -x * sin θ + y * cos θ
@@ -41,24 +42,27 @@ gaborFilter dir !border =
     v = 8
     m = 39
     n = 39
-    kernel = runST $
-      do gArray <- I.newArray ((0, 0), (u, v)) (0 :: Double)    
+    kernel = runSTArray (Int, Int) Double $
+      do gArray <- newArray ((0, 0), (u, v))    
          forM_ [0 .. u] $ \i -> do
            forM_ [0 .. v] $ \j -> do
-             do arr <- I.new (m, n) 
+             do arr <- newArray (m, n) 
              forM_ [0 .. m] $ \x -> do
                forM_ [0 .. n] $ \y -> do
-                 px = gaborfn (x, y, σ, θ, γ, λ, ψ)
-                 I.write arr (x, y) (PixelY (fromIntegral px))
-             idx = (i, j)
+                 let px = gaborfn (x, y, σ, θ, γ, λ, ψ)
+                 writeArray arr (x, y) px
+             let idx = (i, j)
              writeArray gArray idx arr
-  
+
+
 gaborfeatures
   :: forall arr e cs . ( MArray arr Y Double, IP.Array arr Y Double, IP.Array arr Y Word16, MArray arr Y Word16, Array arr X Double)
   => Image arr Y Double
+  -> Array arr Y Double
   -> Int  
   -> Int   
   -> Image arr Y Word16
+
 gaborfeatures image gArray thetaSz distSz = I.map (fmap toWord16) accBin
  where
    u = 5
@@ -68,7 +72,7 @@ gaborfeatures image gArray thetaSz distSz = I.map (fmap toWord16) accBin
      do gResult <- I.new (u, v)   
         forM_ [0 .. u] $ \i -> do
           forM_ [0 .. v] $ \j -> do
-            ip = applyFilter (gaborFilter I.index gArray (i,j)) image 
+            let ip = applyFilter (gaborFilter I.index gArray (i,j)) image 
             writeArray gResult (i, j) ip  
    
    features :: Image arr Y Word16
@@ -77,13 +81,12 @@ gaborfeatures image gArray thetaSz distSz = I.map (fmap toWord16) accBin
         forM_ [0 .. u] $ \i -> do
           forM_ [0 .. v] $ \j -> do
             let gaborAbs = abs (I.index gResult (i, j))
-                gaborAbs = downsample ((0 ==) . (`mod` 4)) gaborAbs
+                gaborAbsDs = downsample ((0 ==) . (`mod` 4)) gaborAbs
             let gaborAbsTr = transpose (gaborAbs)
-                gaborAbs = downsample ((0 ==) . (`mod` 4)) gaborAbs
-            
-
-
-
-
+                gaborAbsTrDs = downsample ((0 ==) . (`mod` 4)) gaborAbs
+            let gaborFinal = (gaborAbsDs - mean(gaborAbsDs))/ stddev (gaborAbsDs)
+            I.write featureVector (i, j) (PixelY (fromIntegral gaborFinal))
+     
+        freeze featureVector
 
 
