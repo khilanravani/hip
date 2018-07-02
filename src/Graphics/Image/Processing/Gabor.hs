@@ -24,8 +24,8 @@ gaborfn λ θ ψ σ γ x y = exp ( (-0.5) * ((x'^2 + γ^2*y'^2) / (σ^2)) :+ 0) 
     where x' =  x * cos θ + y * sin θ
           y' = -x * sin θ + y * cos θ
 
-gaborFilter :: (Array arr cs e, Array arr X e) => Direction -> Border (Pixel cs e) -> Filter arr cs e
-gaborFilter dir !border =
+gaborFilter :: (Array arr cs e, Array arr X e) => (Int, Int) -> Border (Pixel cs e) -> Filter arr cs e
+gaborFilter (x1, x2) !border =
   Filter (correlate border kernel)
   where
     widthMax, var1, heightMax, var2 :: Int
@@ -42,7 +42,7 @@ gaborFilter dir !border =
     v = 8
     m = 39
     n = 39
-    kernel = runSTArray (Int, Int) Double $
+    kernel = runSTArray $
       do gArray <- newArray ((0, 0), (u, v))    
          forM_ [0 .. u] $ \i -> do
            forM_ [0 .. v] $ \j -> do
@@ -58,7 +58,7 @@ gaborFilter dir !border =
 gaborResult
   :: forall arr e cs . ( MArray arr Y Double, IP.Array arr Y Double, IP.Array arr Y Word16, MArray arr Y Word16, Array arr X Double)
   => Image arr Y Double
-  -> 
+  -> ()
   -> Int  
   -> Int   
   -> Image arr Y Word16
@@ -72,6 +72,6 @@ gaborResult image gArray thetaSz distSz = I.map (fmap toWord16) accBin
      do gResult <- I.new (u, v)   
         forM_ [0 .. u] $ \i -> do
           forM_ [0 .. v] $ \j -> do
-            let ip = applyFilter (gaborFilter I.index gArray (i,j)) image 
+            let ip = applyFilter (gaborFilter I.index gArray (i,j) Edge) image 
             writeArray gResult (i, j) ip  
  
